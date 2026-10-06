@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# data & artifacts (keep READMEs)
+data/raw/
+data/processed/
+data/synthetic/
+data/*.db
+models/**/*.pt
+models/**/*.onnx
+models/**/*.engine
+runs/
+mlruns/
+outputs/
+*.mp4

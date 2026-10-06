@@ -1,0 +1,11 @@
+# Lightweight set for unit tests / CI (no ultralytics, no paddle)
+numpy
+opencv-python-headless
+pyyaml
+fastapi
+httpx
+python-multipart
+onnx
+onnxruntime
+pytest
+ruff

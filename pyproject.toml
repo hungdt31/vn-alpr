@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vn-alpr"
+version = "0.1.0"
+description = "Vietnamese license plate recognition: YOLO detection + CRNN/PaddleOCR + VN plate post-processing"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "opencv-python-headless",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+detect = ["ultralytics>=8.3"]
+crnn = ["torch>=2.2", "onnx", "onnxruntime"]
+paddle = ["paddlepaddle", "paddleocr"]
+app = ["fastapi", "uvicorn[standard]", "python-multipart", "streamlit"]
+dev = ["pytest", "ruff", "httpx"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "B008",  # FastAPI's File(...) defaults
+    "B905",  # zip() strict=
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["alpr", "app"]

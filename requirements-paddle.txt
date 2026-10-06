@@ -1,0 +1,3 @@
+# Optional: PaddleOCR baseline recognizer
+paddlepaddle
+paddleocr

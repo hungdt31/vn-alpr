@@ -1,0 +1,24 @@
+# End-to-end inference pipeline configuration
+detector:
+  weights: models/detector/best.pt   # .pt, .onnx or .engine
+  conf: 0.4
+  iou: 0.5
+  imgsz: 640
+  device: null                       # null = auto, "cpu", "0", ...
+
+ocr:
+  engine: crnn                       # crnn | paddle
+  crnn_weights: models/crnn/best.pt  # .pt or .onnx (with sidecar .json)
+  device: cpu
+
+postprocess:
+  enabled: true                      # VN plate format fixing (ablation: set false)
+  deskew: true
+  two_line_ratio: 2.5                # width/height below this => 2-line plate
+  crop_pad: 0.05
+
+tracking:
+  tracker: bytetrack.yaml
+  min_hits: 3                        # valid reads needed before confirming a plate
+  min_agreement: 0.6                 # weighted share of the top reading
+  max_age: 30                        # frames without detection before a track is dropped
