@@ -13,6 +13,7 @@ data/*.db
 models/**/*.pt
 models/**/*.onnx
 models/**/*.engine
+models/**/*.json
 runs/
 mlruns/
 outputs/
