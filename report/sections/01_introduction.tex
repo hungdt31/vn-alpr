@@ -1,0 +1,40 @@
+% !TEX root = ../main.tex
+\section{Giới thiệu}
+
+\subsection{Bài toán}
+Tại cổng ra vào bãi đỗ xe của chung cư, trung tâm thương mại hay nhà máy, việc ghi biển số thường làm thủ công hoặc dùng thẻ giấy. Cách làm này chậm, dễ sai và khó tra cứu. Bài toán nhận diện biển số tự động (Automatic License Plate Recognition, ALPR) nhận ảnh hoặc video từ camera và trả về chuỗi ký tự của biển số. Kết quả đó được dùng để ghi nhận lượt vào/ra và tính thời gian gửi xe.
+
+Biển số Việt Nam có hai đặc thù làm bài toán khó hơn so với nhiều nước khác:
+\begin{itemize}[nosep]
+  \item \textbf{Có cả biển 1 dòng và 2 dòng.} Ô tô thường dùng biển 1 dòng (ví dụ \code{51G-123.45}). Xe máy và một số ô tô dùng biển 2 dòng (ví dụ \code{59-X1 / 123.45}).
+  \item \textbf{Định dạng có cấu trúc nhưng đa dạng.} Seri có thể gồm 1--2 chữ cái, hoặc chữ cái kèm chữ số với xe máy, và phần số có 4--5 chữ số.
+\end{itemize}
+
+\subsection{Mục tiêu}
+Các chỉ tiêu được đặt ra trong đặc tả dự án như sau:
+
+\begin{table}[H]
+\centering
+\caption{Chỉ tiêu mục tiêu của dự án.}
+\label{tab:targets}
+\begin{tabular}{lll}
+\toprule
+Chỉ số & Mục tiêu & Ghi chú \\
+\midrule
+mAP@0.5 của bộ phát hiện & $\geq 0{,}95$ & Trên tập test \\
+mAP@0.5:0.95 của bộ phát hiện & $\geq 0{,}70$ & \\
+Độ chính xác ký tự & $\geq 97\,\%$ & \\
+\textbf{Độ chính xác biển (khớp hoàn toàn)} & $\boldsymbol{\geq 90\,\%}$ & Chỉ số quan trọng nhất \\
+Tốc độ end-to-end trên GPU & $\geq 25$ FPS & Video 720p \\
+Tốc độ end-to-end trên CPU & $\geq 8$ FPS & Laptop không có GPU \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Đóng góp}
+\begin{enumerate}[nosep]
+  \item Một pipeline hoàn chỉnh, hỗ trợ cả biển 1 dòng và 2 dòng, từ phát hiện, tách dòng, nhận dạng, hậu xử lý đến theo dõi qua video.
+  \item Thuật toán hậu xử lý dựa trên mẫu định dạng biển số Việt Nam, sửa ký tự theo vị trí và chọn mẫu cần ít lần sửa nhất.
+  \item Bộ sinh biển số tổng hợp để huấn luyện trước CRNN khi chưa có dữ liệu chữ thật.
+  \item Ứng dụng demo gồm REST API, giao diện web và cơ sở dữ liệu vào/ra, kèm bộ kiểm thử tự động chạy được khi chưa có mô hình.
+\end{enumerate}

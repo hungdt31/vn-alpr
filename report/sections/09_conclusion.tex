@@ -1,0 +1,3 @@
+% !TEX root = ../main.tex
+\section{Kết luận}
+Dự án đã xây dựng một hệ thống ALPR hoàn chỉnh cho biển số Việt Nam, xử lý được cả biển 1 dòng và 2 dòng, đi từ phát hiện, nhận dạng, hậu xử lý theo định dạng biển, theo dõi qua video đến ứng dụng ghi nhận vào/ra. Bộ phát hiện YOLO11n đạt mục tiêu mAP@0.5 ngay sau epoch đầu tiên, và pipeline chạy khoảng 16 FPS trên CPU laptop. Phân tích lỗi chỉ ra rằng khoảng cách miền giữa font tổng hợp và font biển thật là điểm nghẽn chính của bộ nhận dạng. Bước tiếp theo có tác động lớn nhất là gán nhãn chữ cho ảnh thật để fine-tune CRNN và hoàn thiện đánh giá end-to-end.

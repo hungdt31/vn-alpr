@@ -1,0 +1,26 @@
+% !TEX root = ../main.tex
+\section{Cơ sở lý thuyết và công trình liên quan}
+
+\paragraph{Phát hiện đối tượng.} Họ mô hình YOLO~\cite{redmon2016yolo} giải bài toán phát hiện đối tượng trong một lần lan truyền (single-stage), dự đoán đồng thời khung bao và độ tin cậy. Dự án dùng YOLO11~\cite{yolo11}, phiên bản không dùng anchor (anchor-free) của Ultralytics. Bản \emph{nano} chỉ có khoảng 2,6 triệu tham số, phù hợp chạy thời gian thực.
+
+\paragraph{Nhận dạng chuỗi ký tự.} CRNN~\cite{shi2017crnn} kết hợp CNN để trích đặc trưng ảnh với RNN hai chiều để mô hình hoá chuỗi, và được huấn luyện bằng hàm mất mát CTC~\cite{graves2006ctc}. Ưu điểm của CTC là không cần biết vị trí của từng ký tự trong ảnh, chỉ cần chuỗi đáp án của cả dòng. PaddleOCR~\cite{du2020ppocr} là một hệ thống OCR tổng quát mạnh, được dùng làm baseline để so sánh.
+
+\paragraph{Theo dõi đa đối tượng.} ByteTrack~\cite{zhang2022bytetrack} theo hướng \emph{tracking-by-detection}: nó ghép các khung phát hiện giữa các khung hình bằng bộ lọc Kalman và thuật toán ghép cặp, đồng thời tận dụng cả những khung có độ tin cậy thấp. Nhờ vậy mỗi xe giữ được một mã định danh (track ID) ổn định.
+
+\paragraph{Định dạng biển số Việt Nam.} Ký hiệu D là chữ số và L là chữ cái. Phần đầu biển (mã tỉnh và seri) thuộc một trong các mẫu ở Bảng~\ref{tab:templates}, theo sau là 4--5 chữ số.
+
+\begin{table}[H]
+\centering
+\caption{Các mẫu đầu biển số được hỗ trợ.}
+\label{tab:templates}
+\begin{tabular}{llll}
+\toprule
+Mẫu & Ví dụ & Loại xe & Cách hiển thị \\
+\midrule
+\code{DDL}   & \code{51G-123.45}    & Ô tô & 1 hoặc 2 dòng \\
+\code{DDLL}  & \code{30LD-123.45}   & Ô tô (seri 2 chữ) & 1 hoặc 2 dòng \\
+\code{DDLD}  & \code{59-X1 123.45}  & Xe máy & 2 dòng \\
+\code{DDLLD} & \code{29-MĐ1 123.45} & Xe máy điện (chỉ seri MĐ) & 2 dòng \\
+\bottomrule
+\end{tabular}
+\end{table}

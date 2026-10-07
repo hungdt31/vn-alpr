@@ -1,0 +1,42 @@
+% !TEX root = ../main.tex
+\section{Thiết lập thực nghiệm}
+
+\subsection{Môi trường}
+Mô hình được huấn luyện trên Google Colab với GPU NVIDIA T4 (15\,GB) bằng notebook \code{notebooks/train\_colab.ipynb}. Tốc độ suy luận được đo trên laptop với CPU Intel Core i5-10300H (4 nhân, 8 luồng) và 14\,GB RAM, không dùng GPU.
+
+\subsection{Siêu tham số}
+\begin{table}[H]
+\centering
+\caption{Siêu tham số huấn luyện.}
+\label{tab:hparams}
+\begin{tabularx}{\linewidth}{lX}
+\toprule
+\multicolumn{2}{l}{\textbf{Bộ phát hiện (YOLO11n)}} \\
+\midrule
+Khởi tạo & \code{yolo11n.pt} (tiền huấn luyện trên COCO) \\
+Kích thước ảnh, batch & 640, 32 \\
+Số epoch & tối đa 100, dừng sớm sau 20 epoch không cải thiện \\
+Bộ tối ưu & AdamW, $\text{lr} = 0{,}002$, momentum 0,9 (Ultralytics tự chọn) \\
+Tăng cường & mosaic (tắt ở 10 epoch cuối), xoay $\pm10^\circ$, phối cảnh $5\cdot10^{-4}$, HSV-V 0,5, không lật ngang \\
+\midrule
+\multicolumn{2}{l}{\textbf{Bộ nhận dạng (CRNN)}} \\
+\midrule
+Dữ liệu & 50\,000 biển tổng hợp (khoảng 75\,000 dòng); kiểm định 2\,000 biển \\
+Batch, epoch & 128, 20 (checkpoint tốt nhất ở epoch 7) \\
+Bộ tối ưu & AdamW, $\text{lr}=10^{-3}$, weight decay $10^{-4}$, lịch OneCycle \\
+Khác & cắt gradient ở chuẩn 5, CTC blank = 0, tăng cường trực tuyến với cường độ 0,7 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Độ đo}
+\begin{itemize}[nosep]
+  \item \textbf{Phát hiện:} precision, recall, mAP@0.5 và mAP@0.5:0.95 (trung bình trên các ngưỡng IoU từ 0,5 đến 0,95).
+  \item \textbf{Độ chính xác biển} (khớp hoàn toàn): tỉ lệ biển có chuỗi dự đoán trùng hoàn toàn với đáp án sau khi chuẩn hoá.
+  \item \textbf{Độ chính xác ký tự}: $1 - \text{CER}$, với
+  \begin{equation}
+    \text{CER} = \frac{\sum_i \operatorname{lev}(\hat{y}_i, y_i)}{\sum_i |y_i|},
+  \end{equation}
+  trong đó $\operatorname{lev}$ là khoảng cách Levenshtein.
+  \item \textbf{End-to-end:} các biển đáp án trong một ảnh được ghép tham lam với các dự đoán theo khoảng cách chỉnh sửa. Biển bị bỏ sót được tính là sai.
+\end{itemize}

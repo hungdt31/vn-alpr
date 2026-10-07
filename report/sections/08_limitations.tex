@@ -1,0 +1,19 @@
+% !TEX root = ../main.tex
+\section{Hạn chế và hướng phát triển}\label{sec:limit}
+
+\paragraph{Hạn chế.}
+\begin{enumerate}[nosep]
+  \item Chưa có nhãn chữ thật, nên CRNN chưa được fine-tune trên biển thật và chưa có số liệu ablation end-to-end.
+  \item Dữ liệu tổng hợp dùng font Hershey, khác font biển số Việt Nam.
+  \item Chưa tối ưu cho ảnh ban đêm hay camera hồng ngoại.
+  \item Hướng vào/ra hiện cố định theo camera.
+\end{enumerate}
+
+\paragraph{Hướng phát triển, theo thứ tự ưu tiên.}
+\begin{enumerate}[nosep]
+  \item \textbf{Gán nhãn chữ bán tự động.} PaddleOCR đọc trước trên các khung biển có sẵn trong nhãn YOLO, sau đó người kiểm tra và sửa. Từ đó tạo \code{texts.csv} và \code{test\_texts.csv}, rồi fine-tune CRNN (bước 4b) và chạy ablation.
+  \item Sinh dữ liệu tổng hợp bằng font gần giống font biển số Việt Nam, để giảm khoảng cách miền ngay từ giai đoạn huấn luyện trước.
+  \item Bổ sung các cặp nhầm đặc thù của font Việt Nam (ví dụ \code{H}$\to$\code{4}) vào hậu xử lý, dựa trên phân tích lỗi thực tế.
+  \item Xuất ONNX với kích thước đầu vào động để tăng tốc trên CPU. Thử TensorRT FP16 khi triển khai trên GPU.
+  \item Suy ra hướng vào/ra từ quỹ đạo theo dõi thay vì cố định theo camera.
+\end{enumerate}

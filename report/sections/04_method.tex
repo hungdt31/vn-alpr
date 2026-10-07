@@ -1,0 +1,143 @@
+% !TEX root = ../main.tex
+\section{Phương pháp}
+
+\subsection{Kiến trúc tổng thể}
+Hình~\ref{fig:pipeline} mô tả luồng xử lý. Với ảnh tĩnh, mỗi khung biển đi qua các bước từ cắt đến hậu xử lý. Với video, bộ phát hiện chạy ở chế độ theo dõi, và kết quả của từng khung hình được gộp theo track ID.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  node distance=0.45cm and 0.38cm,
+  box/.style={draw, rounded corners, fill=blue!6, minimum height=1.0cm, text width=2.2cm, align=center, font=\small},
+  io/.style={draw, rounded corners, fill=gray!10, minimum height=1.0cm, text width=1.9cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=2.2mm]}, thick}
+]
+\node[io]  (in)   {Ảnh / video\\camera};
+\node[box, right=of in]   (det)  {Phát hiện\\YOLO11n};
+\node[box, right=of det]  (pre)  {Cắt, chỉnh nghiêng,\\tách dòng};
+\node[box, right=of pre]  (ocr)  {Nhận dạng\\CRNN + CTC};
+\node[box, below=1.1cm of ocr]  (post) {Hậu xử lý\\mẫu biển VN};
+\node[box, left=of post]  (vote) {ByteTrack +\\bỏ phiếu};
+\node[box, left=of vote]  (app)  {API, giao diện,\\SQLite};
+\node[io,  left=of app]   (out)  {Lượt vào/ra,\\thời gian gửi};
+\draw[arr] (in) -- (det);
+\draw[arr] (det) -- (pre);
+\draw[arr] (pre) -- (ocr);
+\draw[arr] (ocr) -- (post);
+\draw[arr] (post) -- (vote);
+\draw[arr] (vote) -- (app);
+\draw[arr] (app) -- (out);
+\end{tikzpicture}}
+\caption{Kiến trúc pipeline VN-ALPR.}
+\label{fig:pipeline}
+\end{figure}
+
+Mã nguồn tách thành thư viện lõi \code{src/alpr} (không phụ thuộc web hay CSDL), lớp ứng dụng \code{app/}, và các script huấn luyện, đánh giá trong \code{scripts/}. Bộ nhận dạng là một giao diện (protocol) chung: mọi đối tượng có phương thức \code{recognize(list[img]) -> list[(text, conf)]} đều dùng được. Nhờ đó CRNN và PaddleOCR thay thế được cho nhau, và kiểm thử dùng được bộ nhận dạng giả.
+
+\subsection{Phát hiện biển số}
+Bộ phát hiện là YOLO11n khởi tạo từ trọng số tiền huấn luyện trên COCO, rồi fine-tune với một lớp \code{plate}. Ngoài các phép tăng cường mặc định của Ultralytics (mosaic, HSV), cấu hình có hai điểm riêng:
+\begin{itemize}[nosep]
+  \item \textbf{Tắt lật ngang} (\code{fliplr=0}), vì biển số chứa chữ và ảnh lật gương không tồn tại ngoài thực tế.
+  \item Xoay $\pm 10^\circ$ và méo phối cảnh nhẹ để mô phỏng góc đặt camera.
+\end{itemize}
+Lúc suy luận, khung có độ tin cậy dưới 0,4 bị loại, và NMS dùng ngưỡng IoU 0,5.
+
+\subsection{Tiền xử lý}
+\paragraph{Cắt và chỉnh nghiêng.} Vùng biển được cắt với lề 5\,\% kích thước khung. Góc nghiêng được ước lượng từ hình chữ nhật xoay có diện tích nhỏ nhất (\code{minAreaRect}) bao vùng chữ đã nhị phân hoá. Góc được tính từ \emph{cạnh dài} của bốn đỉnh hình chữ nhật, thay vì dùng giá trị góc mà OpenCV trả về, vì quy ước của giá trị đó khác nhau giữa các phiên bản OpenCV. Chỉ những góc trong khoảng $[1^\circ, 15^\circ]$ mới được hiệu chỉnh.
+
+\paragraph{Phân loại 1 dòng / 2 dòng.} Biển 1 dòng có tỉ lệ rộng/cao khoảng 4,7:1, biển 2 dòng khoảng 1,4:1. Ảnh cắt được coi là biển 2 dòng khi $w/h < 2{,}5$.
+
+\paragraph{Tách dòng bằng hồ sơ chiếu ngang.}\label{sec:split}
+Gọi $B(x,y) \in \{0,1\}$ là ảnh nhị phân, trong đó điểm chữ có giá trị 1, và $h$ là chiều cao ảnh. Hồ sơ chiếu ngang là
+\begin{equation}
+  P(y) = \sum_{x} B(x,y).
+\end{equation}
+Sau khi làm trơn $P$ bằng bộ lọc trung bình 3 điểm, dòng tách $y^\ast$ là tâm của đoạn các hàng có giá trị nhỏ nhất trong dải giữa $[0{,}3h,\ 0{,}7h]$, tức là hàng ``trống'' nhất giữa hai dòng chữ. Giới hạn trong dải giữa giúp tránh nhầm với viền trên và viền dưới của biển.
+
+\subsection{Nhận dạng ký tự: CRNN}
+Ảnh mỗi dòng được chuyển sang xám, co giãn giữ nguyên tỉ lệ về chiều cao 32, đệm bên phải tới chiều rộng 128, rồi chuẩn hoá về $[-1, 1]$. Kiến trúc mạng được trình bày ở Bảng~\ref{tab:crnn}.
+
+\begin{table}[H]
+\centering
+\caption{Kiến trúc CRNN (tổng cộng 2,35 triệu tham số). Mỗi khối Conv gồm Conv $3\times3$, BatchNorm và ReLU.}
+\label{tab:crnn}
+\begin{tabular}{lll}
+\toprule
+Lớp & Cấu hình & Kích thước đầu ra ($C \times H \times W$) \\
+\midrule
+Đầu vào & ảnh xám & $1 \times 32 \times 128$ \\
+Conv + MaxPool & 64, pool $2\times2$ & $64 \times 16 \times 64$ \\
+Conv + MaxPool & 128, pool $2\times2$ & $128 \times 8 \times 32$ \\
+Conv $\times 2$ + MaxPool & 256, pool $2\times1$ & $256 \times 4 \times 32$ \\
+Conv + MaxPool & 256, pool $2\times1$ & $256 \times 2 \times 32$ \\
+Dropout2d & $p = 0{,}1$ & $256 \times 2 \times 32$ \\
+Trung bình theo chiều cao & & $32 \times 256$ (chuỗi $T = 32$ bước) \\
+BiLSTM & 2 lớp, 128 đơn vị mỗi chiều & $32 \times 256$ \\
+Tuyến tính & & $32 \times 37$ (36 ký tự + blank) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Hai lựa chọn thiết kế nhằm giữ mô hình xuất được sang ONNX:
+\begin{itemize}[nosep]
+  \item Lấy trung bình theo chiều cao bằng \code{mean(dim=2)} thay vì \code{AdaptiveAvgPool2d((1, None))}, vì phép sau không xuất được sang ONNX.
+  \item Xuất ONNX bằng trình xuất cũ (\code{dynamo=False}), vì trình xuất dynamo cố định kích thước batch của LSTM vào đồ thị tính toán.
+\end{itemize}
+
+\paragraph{Hàm mất mát CTC.} Với bộ ký tự $\mathcal{A}$ gồm 36 ký tự (0--9, A--Z) và ký hiệu trống (blank, chỉ số 0), mạng cho ra phân phối $p(\cdot \mid x)$ tại mỗi bước $t = 1,\dots,T$. Gọi $\mathcal{B}$ là ánh xạ gộp các ký tự lặp liên tiếp rồi bỏ blank. Xác suất của chuỗi đáp án $y$ là tổng xác suất mọi đường đi $\pi$ ánh xạ về $y$:
+\begin{equation}
+  p(y \mid x) = \sum_{\pi \in \mathcal{B}^{-1}(y)} \prod_{t=1}^{T} p(\pi_t \mid x),
+  \qquad
+  \mathcal{L}_{\text{CTC}} = -\log p(y \mid x).
+\end{equation}
+Lúc suy luận, chuỗi được giải mã tham lam (greedy): lấy ký hiệu có xác suất lớn nhất ở mỗi bước rồi áp dụng $\mathcal{B}$. Độ tin cậy là trung bình xác suất của các ký tự được giữ lại.
+
+\subsection{Hậu xử lý theo định dạng biển số Việt Nam}
+Chuỗi OCR trước hết được chuẩn hoá: chuyển sang chữ hoa, đổi \code{Đ}$\to$\code{D}, chỉ giữ A--Z và 0--9. Sau đó thuật toán thử từng mẫu đầu biển $m$ ở Bảng~\ref{tab:templates}, ghép với phần số 4--5 chữ số:
+
+\begin{lstlisting}[caption={Thuật toán khớp mẫu biển số (rút gọn từ \code{plate\_format.py}).}]
+best = None
+for m in TEMPLATES:                       # (*thứ tự mẫu dùng để phá thế hoà*)
+    for n in (5, 4):                      # (*độ dài phần số*)
+        if len(s) != len(m) + n: continue
+        ok, text, fixes = True, "", 0
+        for ch, kind in zip(s, m + "D" * n):
+            if kind == "D" and not ch.isdigit():
+                if ch not in TO_DIGIT: ok = False; break
+                ch = TO_DIGIT[ch]; fixes += 1      # O->0, B->8, S->5, ...
+            if kind == "L" and ch not in VALID_LETTERS:
+                if ch not in TO_LETTER: ok = False; break
+                ch = TO_LETTER[ch]; fixes += 1     # 0->D, 8->B, 5->S, ...
+            text += ch
+        if ok and (best is None or fixes < best.fixes):
+            best = (text, fixes)
+\end{lstlisting}
+
+Ba quy tắc bổ sung:
+\begin{itemize}[nosep]
+  \item \textbf{Ràng buộc từ biển 2 dòng.} Độ dài dòng 1 cho biết seri kết thúc ở đâu. Tuy vậy, nếu một phép khớp trên chuỗi đã ghép cần ít lần sửa hơn, phép khớp đó được ưu tiên, để bù cho trường hợp tách dòng lệch một ký tự.
+  \item \textbf{Thứ tự ưu tiên khi hoà.} Biển 1 dòng ưu tiên mẫu ô tô (\code{DDL}, \code{DDLL}). Biển 2 dòng ưu tiên mẫu xe máy (\code{DDLD}).
+  \item \textbf{Mẫu \code{DDLLD}} chỉ chấp nhận seri \code{MD}, tức biển xe máy điện \code{MĐ}.
+\end{itemize}
+Chế độ \code{fix=False} chỉ chấp nhận chuỗi khớp đúng mẫu mà không sửa ký tự nào. Chế độ này dùng cho thí nghiệm ablation.
+
+\subsection{Theo dõi và bỏ phiếu qua nhiều khung hình}
+Trong video, mỗi xe xuất hiện ở nhiều khung hình và mỗi lần đọc có thể khác nhau. Với mỗi track ID, bộ bỏ phiếu cộng dồn điểm có trọng số cho từng chuỗi hợp lệ $s$:
+\begin{equation}
+  S(s) = \sum_{i:\ \hat{s}_i = s} \max(c_i,\ 10^{-3}),
+\end{equation}
+trong đó $c_i$ là độ tin cậy OCR của lần đọc thứ $i$. Gọi $s^\ast = \arg\max_s S(s)$. Track được \emph{xác nhận} và phát ra đúng một sự kiện khi thoả cả hai điều kiện sau:
+\begin{equation}
+  \text{số lần đọc hợp lệ} \geq 3
+  \quad\text{và}\quad
+  \frac{S(s^\ast)}{\sum_s S(s)} \geq 0{,}6 .
+\end{equation}
+Sau khi được xác nhận, track không cần chạy OCR nữa, nhờ đó tiết kiệm tính toán. Track mất dấu quá 30 khung hình bị loại. Nếu track đó chưa được xác nhận nhưng đã có đủ số lần đọc, kết quả tốt nhất của nó vẫn được phát ra.
+
+\subsection{Lớp ứng dụng}
+\begin{itemize}[nosep]
+  \item \textbf{CSDL vào/ra (SQLite).} Một lượt cùng biển và cùng hướng trong vòng 60\,giây bị bỏ qua, vì đó là cùng một xe được đọc hai lần. Khi xe ra mà trước đó có lượt vào, hệ thống tính thời gian gửi \code{duration\_s}.
+  \item \textbf{REST API (FastAPI)} gồm các điểm cuối \code{POST /recognize}, \code{POST /gate/\{in|out\}}, \code{GET /events} và \code{GET /parked}. Pipeline được khởi tạo trễ (lazy), nên kiểm thử có thể đưa vào pipeline giả.
+  \item \textbf{Giao diện Streamlit}: tải ảnh hoặc video lên, xem kết quả trực quan và tra cứu lịch sử.
+\end{itemize}

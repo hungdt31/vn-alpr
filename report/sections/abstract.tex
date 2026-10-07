@@ -1,0 +1,22 @@
+% !TEX root = ../main.tex
+% Tóm tắt chiếm trọn một trang: chữ lớn hơn, giãn dòng, mục lục sang trang sau.
+\begin{center}
+  {\LARGE\bfseries Tóm tắt\par}
+\end{center}
+\vspace{1em}
+\begingroup
+\large\linespread{1.35}\selectfont
+\setlength{\parskip}{0.9em}
+
+\textbf{Bối cảnh.} Báo cáo trình bày VN-ALPR, một hệ thống nhận diện biển số xe Việt Nam từ đầu đến cuối (end-to-end), phục vụ việc ghi nhận xe vào/ra tại cổng bãi đỗ xe. Hệ thống phải đọc được cả biển 1 dòng của ô tô lẫn biển 2 dòng của xe máy, và chạy được thời gian thực trên video.
+
+\textbf{Phương pháp.} Hệ thống gồm năm khối: (1) bộ phát hiện biển số YOLO11n được fine-tune; (2) khối tiền xử lý cắt, chỉnh nghiêng và tách biển 2 dòng bằng hồ sơ chiếu ngang (horizontal projection profile); (3) bộ nhận dạng ký tự CRNN (CNN + BiLSTM + CTC) tự huấn luyện; (4) khối hậu xử lý khớp chuỗi với các mẫu định dạng biển số Việt Nam và sửa ký tự dễ nhầm theo vị trí; (5) khối theo dõi đa đối tượng ByteTrack kết hợp bỏ phiếu có trọng số qua nhiều khung hình. Do thiếu dữ liệu chữ thật đã gán nhãn, CRNN được huấn luyện trước trên dữ liệu tổng hợp do dự án tự sinh. Hệ thống được đóng gói thành REST API (FastAPI), giao diện web (Streamlit) và cơ sở dữ liệu SQLite ghi lượt vào/ra.
+
+\textbf{Kết quả.} Sau epoch đầu tiên, bộ phát hiện đạt mAP@0.5 bằng 0,969 trên tập kiểm định, vượt mục tiêu 0,95. CRNN đạt độ chính xác dòng 85,4\,\% trên biển tổng hợp chưa từng thấy. Toàn bộ pipeline chạy khoảng 62\,ms/ảnh (khoảng 16 FPS) trên CPU laptop, vượt mục tiêu 8 FPS.
+
+\textbf{Kết luận.} Phân tích lỗi trên ảnh thật cho thấy bộ phát hiện và khối tiền xử lý hoạt động tốt, còn điểm nghẽn chính là khoảng cách miền (domain gap) giữa font tổng hợp và font biển số Việt Nam ở bộ nhận dạng. Fine-tune CRNN trên ảnh cắt từ biển thật là bước cải thiện ưu tiên.
+
+\vspace{0.5em}
+\textbf{Từ khoá:} nhận diện biển số xe, YOLO, CRNN, CTC, ByteTrack, OCR, dữ liệu tổng hợp, biển số Việt Nam.
+\par\endgroup
+\newpage

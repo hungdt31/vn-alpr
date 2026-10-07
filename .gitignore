@@ -18,3 +18,13 @@ runs/
 mlruns/
 outputs/
 *.mp4
+
+# LaTeX build files
+report/*.aux
+report/*.log
+report/*.fls
+report/*.fdb_latexmk
+report/*.out
+report/*.toc
+report/*.xdv
+report/*.synctex.gz

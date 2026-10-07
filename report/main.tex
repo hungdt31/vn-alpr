@@ -1,0 +1,79 @@
+% !TEX program = xelatex
+% Báo cáo dự án VN-ALPR
+% Biên dịch bằng XeLaTeX:  latexmk -xelatex main.tex
+% (Overleaf: Menu -> Compiler -> XeLaTeX)
+\documentclass[12pt,a4paper]{article}
+
+% ---------------------------------------------------------------- font & ngôn ngữ
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{vietnamese}
+\setmainfont{TeX Gyre Termes}
+\setmonofont{Latin Modern Mono}
+
+% ---------------------------------------------------------------- trang & định dạng
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,multirow}
+\usepackage{float}
+\usepackage{caption,subcaption}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{0pt}
+\captionsetup{font=small,labelfont=bf}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small VN-ALPR: Nhận diện biển số xe Việt Nam}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{15pt}
+
+% Đánh dấu các số liệu chưa có: tìm "\todo" trong file để điền sau khi chạy đánh giá.
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[#1]}}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  backgroundcolor=\color{gray!6},
+  rulecolor=\color{gray!40},
+  escapeinside={(*}{*)},
+}
+
+% ================================================================
+\begin{document}
+
+\input{sections/titlepage}
+\input{sections/abstract}
+
+\tableofcontents
+\newpage
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_data}
+\input{sections/04_method}
+\input{sections/05_setup}
+\input{sections/06_results}
+\input{sections/07_error_analysis}
+\input{sections/08_limitations}
+\input{sections/09_conclusion}
+
+\input{sections/references}
+
+\appendix
+\input{sections/appendix}
+
+\end{document}

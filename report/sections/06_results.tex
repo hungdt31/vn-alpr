@@ -1,0 +1,83 @@
+% !TEX root = ../main.tex
+\section{Kết quả}
+
+\subsection{Bộ phát hiện}
+Ngay sau epoch đầu tiên, trên tập kiểm định (1\,254 ảnh, 1\,288 biển), mô hình đã đạt \textbf{mAP@0.5 = 0,969} và mAP@0.5:0.95 = 0,552. Như vậy chỉ tiêu mAP@0.5 đã đạt từ rất sớm, và khó khăn chủ yếu nằm ở độ khít của khung (mAP@0.5:0.95).
+
+\begin{table}[H]
+\centering
+\caption{Kết quả bộ phát hiện.}
+\label{tab:det}
+\begin{tabular}{lcccc}
+\toprule
+Thời điểm & Precision & Recall & mAP@0.5 & mAP@0.5:0.95 \\
+\midrule
+Epoch 1, tập val & 0,976 & 0,927 & 0,969 & 0,552 \\
+Mô hình cuối, tập test & \todo{?} & \todo{?} & \todo{?} & \todo{?} \\
+\midrule
+Mục tiêu & & & $\geq 0{,}95$ & $\geq 0{,}70$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Bộ nhận dạng trên dữ liệu tổng hợp}
+CRNN sau giai đoạn huấn luyện trước (bản ONNX) được đánh giá trên 1\,000 biển tổng hợp \emph{mới}, sinh với hạt giống chưa dùng khi huấn luyện:
+
+\begin{table}[H]
+\centering
+\caption{CRNN trên 1\,000 biển tổng hợp chưa từng thấy (1\,494 dòng).}
+\label{tab:synth}
+\begin{tabular}{lc}
+\toprule
+Chỉ số & Giá trị \\
+\midrule
+Độ chính xác dòng & 85,4\,\% \\
+Độ chính xác biển, OCR thô & 78,8\,\% \\
+Độ chính xác biển, có hậu xử lý & 78,8\,\% \\
+\quad Biển 1 dòng (506 biển) & 76,7\,\% \\
+\quad Biển 2 dòng (494 biển) & 81,0\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Hậu xử lý không cải thiện kết quả trên dữ liệu tổng hợp. Điều này hợp lý: các lỗi trên ảnh tổng hợp chủ yếu là thiếu hoặc thừa ký tự khi ảnh bị làm mờ mạnh, chứ không phải các cặp ký tự dễ nhầm như \code{O}/\code{0} hay \code{B}/\code{8} mà hậu xử lý được thiết kế để sửa. Tác dụng của hậu xử lý cần được đo trên dữ liệu thật (Bảng~\ref{tab:ablation}).
+
+\subsection{Ablation end-to-end}
+Bảng~\ref{tab:ablation} là khung thí nghiệm ablation được tạo bởi \code{scripts/evaluate.py}. Các số liệu sẽ được điền sau khi có \code{test\_texts.csv}.
+
+\begin{table}[H]
+\centering
+\caption{Ablation end-to-end trên tập test.}
+\label{tab:ablation}
+\begin{tabular}{lcccc}
+\toprule
+Cấu hình & Acc. biển & Acc. 1 dòng & Acc. 2 dòng & Acc. ký tự \\
+\midrule
+YOLO + PaddleOCR & \todo{?} & \todo{?} & \todo{?} & \todo{?} \\
+YOLO + PaddleOCR + hậu xử lý & \todo{?} & \todo{?} & \todo{?} & \todo{?} \\
+YOLO + CRNN & \todo{?} & \todo{?} & \todo{?} & \todo{?} \\
+\textbf{YOLO + CRNN + hậu xử lý} & \todo{?} & \todo{?} & \todo{?} & \todo{?} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tốc độ}
+Tốc độ end-to-end (phát hiện, tiền xử lý, OCR 2 dòng và hậu xử lý) được đo trên ảnh $872 \times 541$ chứa một biển 2 dòng. Mỗi cấu hình chạy 30 lần sau 3 lần khởi động.
+
+\begin{table}[H]
+\centering
+\caption{Độ trễ trên CPU Intel i5-10300H.}
+\label{tab:speed}
+\begin{tabular}{lccc}
+\toprule
+Cấu hình & Trung vị (ms) & P90 (ms) & FPS (theo trung vị) \\
+\midrule
+PyTorch (\code{.pt}) & 61,9 & 78,2 & 16,2 \\
+ONNX Runtime (\code{.onnx}) & 140,5 & 170,4 & 7,1 \\
+\midrule
+Mục tiêu (CPU) & & & $\geq 8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bản PyTorch đạt khoảng 16 FPS trên CPU, vượt mục tiêu 8 FPS. Kết quả bản ONNX chậm hơn là điều đáng chú ý. Nhiều khả năng nguyên nhân là mô hình ONNX được xuất với đầu vào cố định $640\times640$, trong khi Ultralytics với \code{.pt} co ảnh chữ nhật về $640\times416$, nên phải xử lý ít điểm ảnh hơn khoảng 35\,\%. Một hướng cần thử tiếp là xuất ONNX với kích thước động (\code{dynamic=True}) hoặc với \code{imgsz} chữ nhật.

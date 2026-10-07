@@ -1,0 +1,26 @@
+% !TEX root = ../main.tex
+\section{Cấu trúc mã nguồn}
+\begin{lstlisting}
+src/alpr/          (*thư viện lõi*)
+  detection/       YOLO: detect() (*cho ảnh*), track() (*cho*) video (ByteTrack)
+  preprocess.py    (*cắt, chỉnh nghiêng, phân loại và tách dòng*)
+  ocr/crnn/        (*mô hình, bộ ký tự, dataset, bộ nhận dạng .pt/.onnx*)
+  ocr/paddle.py    baseline PaddleOCR
+  postprocess/     (*khớp mẫu biển số Việt Nam*)
+  tracking/        (*bỏ phiếu theo track ID*)
+  pipeline.py      (*ghép các khối*)
+app/               FastAPI, SQLite, Streamlit
+scripts/           (*dữ liệu, huấn luyện, đánh giá, xuất, benchmark*)
+tests/             pytest (*-- dùng mô hình giả nên không cần trọng số*)
+\end{lstlisting}
+
+\section{Tái lập kết quả}
+\begin{lstlisting}
+# (*huấn luyện:*) notebooks/train_colab.ipynb (*trên*) Colab (GPU T4)
+pip install -r requirements.txt && pip install -e .
+pytest -q                                        # (*kiểm thử*)
+streamlit run app/ui/streamlit_app.py            # (*giao diện web*)
+uvicorn app.api.main:app --port 8000             # REST API
+python scripts/evaluate.py --images data/processed/detection/images/test \
+    --gt data/raw/test_texts.csv --tag "YOLO + CRNN + postprocess"
+\end{lstlisting}
