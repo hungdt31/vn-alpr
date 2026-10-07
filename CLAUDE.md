@@ -61,6 +61,7 @@ Data flows through the stages below. `src/alpr/pipeline.py::ALPRPipeline` wires 
    - It applies a per-(plate, direction) cooldown so the same car isn't logged twice.
    - On an exit that follows an entry, it computes `duration_s`.
    - `app/api/main.py::create_app(pipeline, repo)` creates the pipeline and repo lazily, which lets tests inject fakes.
+   - `web/` is a React + Vite + Tailwind v4 frontend that calls the REST API; the Vite dev server proxies `/api/*` to `localhost:8000`. UI components come from the neobrutalism shadcn registry (`@neobrutalism` in `web/components.json`, Base UI variant). Archivo Black has no Vietnamese glyphs, so headings use Be Vietnam Pro and `font-plate` (Archivo Black) is only for ASCII plate text. The Streamlit UI is separate and runs the pipeline in-process.
 
 Config is loaded by `config.py`: nested dataclasses built from `configs/pipeline.yaml`. Unknown keys raise an error, so add new fields to the dataclass first.
 

@@ -1,0 +1,110 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource/archivo-black";
+@import "@fontsource/be-vietnam-pro/800.css";
+@import "@fontsource-variable/space-grotesk";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Neobrutalism theme (https://neobrutalism.com/docs/installation) */
+@theme inline {
+  /* Archivo Black (the neobrutalism default) has no Vietnamese glyphs: headings use Be Vietnam Pro,
+     Archivo Black is kept for plate numbers and the logo, which are ASCII only */
+  --font-head: "Be Vietnam Pro", sans-serif;
+  --font-heading: "Be Vietnam Pro", sans-serif;
+  --font-plate: "Archivo Black", sans-serif;
+  --font-sans: "Space Grotesk Variable", sans-serif;
+  --radius: var(--radius);
+
+  --shadow-xs: 1px 1px 0 0 var(--border);
+  --shadow-sm: 2px 2px 0 0 var(--border);
+  --shadow: 3px 3px 0 0 var(--border);
+  --shadow-md: 4px 4px 0 0 var(--border);
+  --shadow-lg: 6px 6px 0 0 var(--border);
+  --shadow-xl: 10px 10px 0 1px var(--border);
+  --shadow-2xl: 16px 16px 0 1px var(--border);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+}
+
+:root {
+  --radius: 0;
+  --background: #fff7e8;
+  --foreground: #000;
+  --card: #fff;
+  --card-foreground: #000;
+  --primary: #ffdc58;
+  --primary-hover: #ffd12e;
+  --primary-foreground: #000;
+  --secondary: #000;
+  --secondary-hover: #262320;
+  --secondary-foreground: #fff;
+  --muted: #efe7d6;
+  --muted-foreground: #6b6355;
+  --accent: #ffe7a3;
+  --accent-foreground: #000;
+  --destructive: #e63946;
+  --destructive-foreground: #fff;
+  --border: #000;
+  --input: #fff;
+  --ring: #000;
+  --chart-1: #f4a300;
+  --chart-2: #2a9d8f;
+}
+
+.dark {
+  --background: #1a1815;
+  --foreground: #f5f0e6;
+  --card: #262320;
+  --card-foreground: #f5f0e6;
+  --primary: #ffdc58;
+  --primary-hover: #ffd12e;
+  --primary-foreground: #000;
+  --secondary: #3a352f;
+  --secondary-hover: #4a443c;
+  --secondary-foreground: #f5f0e6;
+  --muted: #2e2a24;
+  --muted-foreground: #b3ac9e;
+  --accent: #38342b;
+  --accent-foreground: #f5f0e6;
+  --destructive: #ff6b6b;
+  --destructive-foreground: #1a1815;
+  --border: #000;
+  --input: #262320;
+  --ring: #ffdc58;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-head;
+  }
+}

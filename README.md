@@ -76,6 +76,17 @@ streamlit run app/ui/streamlit_app.py
 docker compose up --build
 ```
 
+### Giao diện React (Neobrutalism)
+
+[web/](web/) là giao diện React + Vite + Tailwind v4, dùng component từ [neobrutalism.com](https://neobrutalism.com) (cài qua shadcn CLI). Khác với Streamlit, giao diện này **gọi vào REST API**, nên phải chạy API trước. Ở chế độ dev, Vite chuyển `/api/*` sang `http://localhost:8000`.
+
+```bash
+uvicorn app.api.main:app --port 8000      # terminal 1, ở thư mục gốc
+cd web && npm install && npm run dev      # terminal 2: http://localhost:5173
+```
+
+Gồm 4 tab: nhận diện ảnh (vẽ khung và biển số lên ảnh), cổng vào/ra (ghi lượt, tính thời gian gửi), lịch sử (tìm theo biển số) và xe đang trong bãi. Thêm component khác bằng `npx shadcn@latest add @neobrutalism/<tên>`.
+
 | API | Mô tả |
 |-----|-------|
 | `POST /recognize` | Upload ảnh, trả danh sách biển số (box, text, confidence, 1/2 dòng) |
