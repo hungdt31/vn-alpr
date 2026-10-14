@@ -1,7 +1,8 @@
 """REST API.
 
 Run:  uvicorn app.api.main:app --host 0.0.0.0 --port 8000
-Env:  ALPR_CONFIG (default configs/pipeline.yaml), ALPR_DB (default data/alpr.db)
+Env:  ALPR_CONFIG (default configs/pipeline.yaml), ALPR_DB (default data/alpr.db),
+      ALPR_PARKING_CONFIG (default configs/parking.yaml)
 """
 
 from __future__ import annotations
@@ -14,13 +15,15 @@ import cv2
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 
+from app.api.parking import parking_router
 from app.db.repository import EventRepository
+from app.parking.lot import ParkingLot
 
 
-def create_app(pipeline=None, repo: EventRepository | None = None) -> FastAPI:
-    """Pipeline and repository are created lazily so the app starts fast and tests can inject fakes."""
+def create_app(pipeline=None, repo: EventRepository | None = None, lot: ParkingLot | None = None) -> FastAPI:
+    """Pipeline, repository and parking lot are created lazily so the app starts fast and tests can inject fakes."""
     app = FastAPI(title="VN-ALPR API", version="0.1.0")
-    state = {"pipeline": pipeline, "repo": repo}
+    state = {"pipeline": pipeline, "repo": repo, "lot": lot}
 
     def get_pipeline():
         if state["pipeline"] is None:
@@ -33,6 +36,18 @@ def create_app(pipeline=None, repo: EventRepository | None = None) -> FastAPI:
         if state["repo"] is None:
             state["repo"] = EventRepository(os.getenv("ALPR_DB", "data/alpr.db"))
         return state["repo"]
+
+    def get_lot() -> ParkingLot:
+        if state["lot"] is None:
+            from app.parking.config import load_parking_config
+
+            cfg = load_parking_config(os.getenv("ALPR_PARKING_CONFIG", "configs/parking.yaml"))
+            cfg.db = os.getenv("ALPR_DB", cfg.db)
+            # mirror entries/exits into the gate log so /events and /parked stay in sync
+            state["lot"] = ParkingLot(cfg, on_event=lambda *e: get_repo().add_event(*e, gate="sim"))
+        return state["lot"]
+
+    app.include_router(parking_router(get_lot, get_pipeline))
 
     async def read_image(file: UploadFile) -> np.ndarray:
         data = np.frombuffer(await file.read(), np.uint8)

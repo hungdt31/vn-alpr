@@ -85,7 +85,20 @@ uvicorn app.api.main:app --port 8000      # terminal 1, ở thư mục gốc
 cd web && npm install && npm run dev      # terminal 2: http://localhost:5173
 ```
 
-Gồm 4 tab: nhận diện ảnh (vẽ khung và biển số lên ảnh), cổng vào/ra (ghi lượt, tính thời gian gửi), lịch sử (tìm theo biển số) và xe đang trong bãi. Thêm component khác bằng `npx shadcn@latest add @neobrutalism/<tên>`.
+Chế độ **Công cụ nhận diện** gồm 4 tab: nhận diện ảnh (vẽ khung và biển số lên ảnh), cổng vào/ra (ghi lượt, tính thời gian gửi), lịch sử (tìm theo biển số) và xe đang trong bãi. Thêm component khác bằng `npx shadcn@latest add @neobrutalism/<tên>`.
+
+### Mô phỏng bãi giữ xe 3D
+
+Chế độ **Mô phỏng bãi xe 3D** (mặc định) là một bãi 30 chỗ (20 xe máy, 10 ô tô) dựng bằng React Three Fiber, chạy với model nhận diện thật:
+
+1. **Xe vào:** chọn loại xe, kiểu dáng, màu → xe chạy tới cổng → tải ảnh biển số lên (hoặc chụp webcam) → model đọc biển, người gửi sửa tay nếu sai → bấm vào **thùng thẻ** để lấy thẻ → xác nhận → barrier mở, xe vào ô đỗ.
+2. **Xe ra:** bấm vào xe trong bãi → xe ra cổng → đưa thẻ và chụp ảnh biển số → hệ thống so biển đọc được với biển của thẻ và tính phí:
+   - **Khớp:** thu phí, mở barrier, thẻ về thùng.
+   - **Lệch 1 ký tự, độ tin cậy thấp:** nghi model đọc sai.
+   - **Không khớp, hoặc thẻ của xe khác:** chỉ **bảo vệ** mới cho ra được, và phải ghi lý do. Người lái không sửa được biển lúc ra.
+3. **Bảo vệ:** số xe, doanh thu, tỷ lệ phải sửa tay (ước lượng lỗi của model ngoài thực tế), thẻ bị khoá do mất, lịch sử lượt gửi, và nút **xuất các biển đã sửa tay** thành dữ liệu huấn luyện CRNN (`data/corrections/ocr`, cùng định dạng `labels.tsv`).
+
+Ngoài ra còn có: chặn gửi trùng biển, báo hết chỗ theo loại xe, mất thẻ (tra theo biển, thu phí, khoá thẻ), và nút **tua thời gian** (+1h, +4h, +1 ngày) để thử tính phí. Bảng giá, số chỗ và ngưỡng so khớp nằm trong [configs/parking.yaml](configs/parking.yaml). Ảnh chụp ở cổng được lưu trong `data/captures/` (đã nằm trong `.gitignore`, vì là dữ liệu cá nhân).
 
 | API | Mô tả |
 |-----|-------|

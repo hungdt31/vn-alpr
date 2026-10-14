@@ -1,0 +1,31 @@
+# Parking lot simulation (app/parking). Every key must exist in app/parking/config.py.
+lot:
+  name: Bãi giữ xe VN-ALPR
+  cards: 30                  # tickets in the dispenser; one per slot
+  slots:
+    motorbike: 20
+    car: 10
+
+# Fee = base for the first base_hours, then per_hour for every started hour after that.
+# A lost ticket adds lost_card on top of the parking fee.
+fees:
+  motorbike:
+    base: 5000
+    base_hours: 4
+    per_hour: 2000
+    lost_card: 50000
+  car:
+    base: 30000
+    base_hours: 2
+    per_hour: 10000
+    lost_card: 200000
+
+# Exit check: same plate -> ok. One character off with a low OCR confidence -> "suspect"
+# (probably a misread, a guard decides). Anything else -> "mismatch".
+matching:
+  max_suspect_distance: 1
+  suspect_below_conf: 0.95
+
+db: data/alpr.db
+captures_dir: data/captures
+allow_time_travel: true      # demo only: lets the UI fast-forward the clock to show fees

@@ -10,6 +10,8 @@ data/raw/
 data/processed/
 data/synthetic/
 data/drafts/
+data/captures/
+data/corrections/
 drafts.zip
 data/*.db
 models/**/*.pt

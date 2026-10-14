@@ -8,6 +8,7 @@ import App from "./App.tsx"
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
-    <Toaster position="top-right" />
+    {/* the app is light only: with the default "system" theme, a dark OS made sonner paint descriptions #e8e8e8 */}
+    <Toaster position="top-right" theme="light" />
   </StrictMode>,
 )

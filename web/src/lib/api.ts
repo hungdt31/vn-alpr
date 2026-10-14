@@ -1,5 +1,5 @@
 // Client for the FastAPI backend (app/api/main.py). In dev, Vite proxies /api -> http://localhost:8000.
-const BASE = import.meta.env.VITE_API_URL ?? "/api"
+export const BASE = import.meta.env.VITE_API_URL ?? "/api"
 
 export type Direction = "in" | "out"
 
@@ -38,7 +38,16 @@ export interface GateResponse extends RecognizeResponse {
   events: GateEvent[]
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/** A non-2xx answer; `message` is the server's `detail`, ready to show to the user. */
+export class ApiError extends Error {
+  readonly status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, init)
   if (!res.ok) {
     let detail = res.statusText
@@ -48,7 +57,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // non-JSON error body (e.g. "Internal Server Error")
     }
-    throw new Error(`${res.status}: ${detail}`)
+    throw new ApiError(res.status, detail)
   }
   return res.json() as Promise<T>
 }
