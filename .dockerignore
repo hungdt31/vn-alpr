@@ -1,0 +1,19 @@
+# Keep the build context small: only src, app, configs, models and web are copied into the image.
+.git
+.github
+.venv
+**/__pycache__
+.pytest_cache
+.ruff_cache
+web/node_modules
+web/dist
+data
+outputs
+runs
+notebooks
+report
+tests
+scripts
+*.zip
+models/**/*.engine
+models/**/*.onnx

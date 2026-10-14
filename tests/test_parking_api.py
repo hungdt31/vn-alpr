@@ -100,8 +100,9 @@ def test_export_corrections(client, pipeline, tmp_path):
     cap = client.post("/parking/captures", files=snapshot()).json()["capture"]
     client.post("/parking/entry", json={"card_id": 1, "plate": "54-L1 9999", "vehicle_type": "motorbike",
                                        "capture_id": cap["id"]})
-    out = tmp_path / "corr"
-    r = client.post("/parking/corrections/export", json={"out": str(out), "edited_only": True}).json()
+    out = tmp_path / "corr"  # exports_dir of the test settings
+    r = client.post("/parking/corrections/export", json={"out": "/etc", "edited_only": True}).json()
+    assert r["out"] == str(out)  # a path sent by the caller is ignored
     assert r["lines"] == 2  # a 2-line plate gives one image per line
     assert (out / "labels.tsv").read_text().split() == ["gate_00000_0.png", "54L1", "gate_00000_1.png", "9999"]
     assert client.get("/parking/stats").json()["ocr_edit_rate"] == 1.0

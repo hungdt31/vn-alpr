@@ -28,4 +28,5 @@ matching:
 
 db: data/alpr.db
 captures_dir: data/captures
+exports_dir: data/corrections/ocr   # where /parking/corrections/export writes (never chosen by the caller)
 allow_time_travel: true      # demo only: lets the UI fast-forward the clock to show fees

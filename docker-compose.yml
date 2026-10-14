@@ -1,12 +1,10 @@
-# docker compose up --build   ->  API http://localhost:8000/docs  (web UI: cd web && npm run dev)
-# Put trained weights in ./models (detector/best.pt, crnn/best.pt) before starting.
+# docker compose up --build   ->  http://localhost:8080 (web UI + API, docs at /docs)
+# Put trained weights in ./models (detector/best.pt, crnn/best.pt) before building: they go into the image.
 services:
-  api:
+  app:
     build: .
-    ports: ["8000:8000"]
+    ports: ["8080:8080"]
     environment:
-      ALPR_CONFIG: configs/pipeline.yaml
       ALPR_DB: /app/data/alpr.db
     volumes:
-      - ./models:/app/models:ro
-      - ./data/db:/app/data
+      - ./data/docker:/app/data   # keeps the database and gate snapshots between restarts

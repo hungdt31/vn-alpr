@@ -204,5 +204,5 @@ class ClockRequest(BaseModel):
 
 
 class ExportRequest(BaseModel):
-    out: str = "data/corrections/ocr"
+    # no output path here: a path chosen by the caller would let anyone write files anywhere on the server
     edited_only: bool = False

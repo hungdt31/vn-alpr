@@ -28,6 +28,7 @@ def make_settings(tmp_path, cards=4, slots=None, time_travel=True) -> Settings:
     parking = ParkingSettings(
         lot=LotLayout(cards=cards, slots=slots or {"motorbike": 2, "car": 1}),
         captures_dir=str(tmp_path / "captures"),
+        exports_dir=str(tmp_path / "corr"),
         allow_time_travel=time_travel,
     )
     return Settings(db=str(tmp_path / "test.db"), parking=parking)

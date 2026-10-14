@@ -39,6 +39,10 @@ class RecognitionService:
             raise BadImage("Cannot encode image")
         return buf.tobytes()
 
+    def warmup(self) -> None:
+        """Load the models and run one blank image, so the first real request is as fast as the next ones."""
+        self.reader.process_image(np.zeros((480, 640, 3), np.uint8))
+
     def read(self, img: np.ndarray) -> tuple[list[PlateResult], float]:
         """Plates found in the image and the time it took, in ms."""
         t0 = time.perf_counter()

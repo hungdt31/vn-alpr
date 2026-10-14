@@ -3,6 +3,8 @@
 Env:  ALPR_CONFIG          pipeline config      (default configs/pipeline.yaml)
       ALPR_PARKING_CONFIG  parking lot config   (default configs/parking.yaml)
       ALPR_DB              SQLite database      (default: `db` in the parking config)
+      ALPR_PRELOAD=1       load the models when the server starts instead of on the first request
+      ALPR_WEB_DIR         built web UI (web/dist) to serve at / (read by api/main.py; unset in development)
 """
 
 from __future__ import annotations
@@ -40,6 +42,7 @@ class ParkingSettings:
     matching: MatchPolicy = field(default_factory=MatchPolicy)
     db: str = "data/alpr.db"
     captures_dir: str = "data/captures"
+    exports_dir: str = "data/corrections/ocr"  # training lines exported from driver corrections
     allow_time_travel: bool = False  # demo only: fast-forward the clock to show fees
 
 
@@ -65,6 +68,7 @@ class Settings:
     pipeline_config: str = "configs/pipeline.yaml"
     db: str = "data/alpr.db"
     gate_cooldown_s: float = 60.0  # a repeated (plate, direction) within this window is the same car read twice
+    preload_pipeline: bool = False
     parking: ParkingSettings = field(default_factory=ParkingSettings)
 
     @classmethod
@@ -73,5 +77,6 @@ class Settings:
         return cls(
             pipeline_config=os.getenv("ALPR_CONFIG", "configs/pipeline.yaml"),
             db=os.getenv("ALPR_DB", parking.db),
+            preload_pipeline=os.getenv("ALPR_PRELOAD") == "1",
             parking=parking,
         )

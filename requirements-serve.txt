@@ -1,0 +1,9 @@
+# What the Docker image needs to serve the API (torch is installed first, from the CPU-only index).
+# Training, notebooks and the labeling tool use requirements.txt instead.
+numpy
+opencv-python-headless
+pyyaml
+ultralytics>=8.3
+fastapi
+uvicorn[standard]
+python-multipart

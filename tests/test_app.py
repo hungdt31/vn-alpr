@@ -86,3 +86,29 @@ def test_importing_the_api_opens_nothing():
     from app.api import main
 
     assert main.app.state.container is None
+
+
+def test_serves_the_built_web_ui_without_hiding_the_api(container, tmp_path):
+    web = tmp_path / "dist"
+    web.mkdir()
+    (web / "index.html").write_text("<!doctype html><title>VN-ALPR</title>")
+    client = TestClient(create_app(container, web_dir=str(web)))
+    assert "VN-ALPR" in client.get("/").text
+    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("/parking/lot").json()["cards"]["available"] == 4
+
+
+def test_preload_warms_the_pipeline_at_startup(tmp_path, clock):
+    calls = []
+
+    class CountingPipeline(FakePipeline):
+        def process_image(self, img):
+            calls.append(img.shape)
+            return super().process_image(img)
+
+    settings = make_settings(tmp_path)
+    settings.preload_pipeline = True
+    container = build_container(settings, pipeline=CountingPipeline(), clock=clock)
+    with TestClient(create_app(container)):  # entering the client runs the lifespan
+        assert calls == [(480, 640, 3)]
+    container.close()

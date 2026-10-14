@@ -26,6 +26,7 @@ cd web && npm run dev                                                     # Reac
 - `pyproject.toml` sets `pythonpath = ["src", "."]`, so tests import `alpr` and `app` without an install.
 - Each script in `scripts/` starts with `import _bootstrap` to get the same path setup. Don't remove it. Ruff's isort is configured to place it correctly.
 - The training, evaluation and export commands are documented in `README.md` ("Train" section) and in the notebook.
+- Deployment (`README.md`, "Deploy lên Google Cloud Run"): the `Dockerfile` builds the web UI with Node, then a Python 3.11 image with CPU-only torch **and torchvision from the same index** (the PyPI torchvision pulled by ultralytics breaks with "operator torchvision::nms does not exist"). The image bakes in `models/**/best.pt`, serves the UI at `/` (`ALPR_WEB_DIR`, built with `VITE_API_URL=` so the UI calls the API on the same origin, without `/api`) and warms the pipeline at startup (`ALPR_PRELOAD=1`). `.gcloudignore` exists so `gcloud run deploy --source .` uploads the weights (it would otherwise follow `.gitignore`). Keep Cloud Run at one instance: the lot lives in that instance's SQLite file. Runtime Python deps for the image are in `requirements-serve.txt`.
 
 ## Architecture
 

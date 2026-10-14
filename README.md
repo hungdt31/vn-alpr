@@ -72,7 +72,7 @@ uvicorn app.api.main:app --port 8000
 # Giao diện web (React): http://localhost:5173, xem mục bên dưới
 cd web && npm install && npm run dev
 
-# Hoặc chạy API bằng Docker
+# Hoặc chạy cả giao diện lẫn API trong một container: http://localhost:8080
 docker compose up --build
 ```
 
@@ -106,6 +106,29 @@ Ngoài ra còn có: chặn gửi trùng biển, báo hết chỗ theo loại xe,
 | `POST /gate/{in\|out}` | Nhận diện và ghi lượt vào/ra. Khi xe ra, trả thêm `duration_s` |
 | `GET /events?plate=51G` | Tra cứu lịch sử |
 | `GET /parked` | Xe đang trong bãi |
+
+## Deploy lên Google Cloud Run
+
+Image Docker gói cả API, model và giao diện đã build (giao diện ở `/`, tài liệu API ở `/docs`). Model `models/**/best.pt` được đưa vào image, nên phải có trên máy trước khi deploy. Thư mục `data/`, `.venv` và báo cáo không được upload (`.gcloudignore`).
+
+```bash
+# 1 lần: tạo project riêng, gắn billing trên console, bật các dịch vụ
+gcloud projects create vn-alpr-demo --name="VN-ALPR"
+gcloud config set project vn-alpr-demo
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+
+# Mỗi lần deploy (Cloud Build build image từ Dockerfile, ~5-10 phút)
+gcloud run deploy vn-alpr --source . --region asia-southeast1 \
+  --memory 2Gi --cpu 1 --max-instances 1 --min-instances 0 \
+  --cpu-boost --timeout 300 --allow-unauthenticated
+```
+
+- `--max-instances 1` là bắt buộc: dữ liệu bãi xe nằm trong SQLite của từng instance, hai instance sẽ cho hai bãi xe khác nhau.
+- Dữ liệu (lượt gửi, ảnh chụp) **mất khi container tắt**: mỗi lần mở lại là một bãi xe sạch. Muốn lưu bền cần chuyển sang Cloud SQL và Cloud Storage.
+- Khi không có người dùng, Cloud Run tắt container (`--min-instances 0`, không tốn tiền); lần mở sau chờ khoảng 10-20 giây để khởi động và nạp model.
+- Chưa có đăng nhập: chỉ dùng ảnh thử, không dùng ảnh biển số của người thật.
+
+Thử image trên máy trước khi deploy: `docker build -t vn-alpr . && docker run -p 8080:8080 vn-alpr`.
 
 ## Train
 

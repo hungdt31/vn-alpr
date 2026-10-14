@@ -116,5 +116,6 @@ def clock(body: ClockRequest, parking: ParkingService = Depends(get_parking)):
 
 @router.post("/corrections/export", response_model=ExportOut)
 def export(body: ExportRequest, parking: ParkingService = Depends(get_parking)):
-    lines = export_line_dataset(parking.labeled_entries(body.edited_only), body.out)
-    return ExportOut(lines=lines, out=body.out)
+    out = parking.settings.exports_dir
+    lines = export_line_dataset(parking.labeled_entries(body.edited_only), out)
+    return ExportOut(lines=lines, out=out)

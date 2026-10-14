@@ -1,0 +1,4 @@
+# Files NOT uploaded by `gcloud run deploy --source .`.
+# Without this file gcloud would use .gitignore, which excludes models/**/*.pt: the image needs those weights.
+#!include:.dockerignore
+.gcloudignore
