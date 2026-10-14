@@ -67,7 +67,18 @@ function Car({ spec, plate }: { spec: VehicleSpec; plate: string }) {
   return (
     <group>
       <Part size={c.body} position={[0, c.bodyY, 0]} color={spec.color} />
-      <Part size={c.cabin} position={[0, c.cabinY, c.cabinZ]} color={GLASS} />
+      {/* cabin and roof in the body color; the windows are glass bands slightly wider/longer than the cabin */}
+      <Part size={c.cabin} position={[0, c.cabinY, c.cabinZ]} color={spec.color} />
+      <Part
+        size={[c.cabin[0] + 0.03, c.cabin[1] * 0.55, c.cabin[2] * 0.8]}
+        position={[0, c.cabinY - c.cabin[1] * 0.05, c.cabinZ]}
+        color={GLASS}
+      />
+      <Part
+        size={[c.cabin[0] * 0.84, c.cabin[1] * 0.55, c.cabin[2] + 0.03]}
+        position={[0, c.cabinY - c.cabin[1] * 0.05, c.cabinZ]}
+        color={GLASS}
+      />
       {spec.model === "pickup" && (
         <Part size={[1.9, 0.35, 2.3]} position={[0, c.bodyY + 0.55, -1.25]} color={spec.color} />
       )}
