@@ -14,7 +14,7 @@ Tập & Số ảnh & Số biển \\
 \midrule
 Train & 5\,849 & \todo{?} \\
 Validation & 1\,254 & 1\,288 \\
-Test & \todo{?} & \todo{?} \\
+Test & 1\,254 & 1\,280 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -27,7 +27,7 @@ Bộ dữ liệu Roboflow chỉ có khung biển số, không có chuỗi ký t�
   \item \textbf{Tăng cường} để mô phỏng ảnh chụp thật: méo phối cảnh, xoay $\pm 5^\circ$, đổi độ sáng và tương phản, làm mờ do lệch nét hoặc do chuyển động, nhiễu cảm biến, giảm độ phân giải.
   \item \textbf{Tách dòng} biển 2 dòng bằng chính thuật toán dùng lúc suy luận (Mục~\ref{sec:split}).
 \end{enumerate}
-Tập huấn luyện gồm 50\,000 biển (khoảng 75\,000 ảnh dòng chữ). Tập kiểm định gồm 2\,000 biển sinh với hạt giống khác. Hình~\ref{fig:synth} minh hoạ một số mẫu.
+Tập huấn luyện gồm 50\,000 biển (75\,013 ảnh dòng chữ). Tập kiểm định gồm 2\,000 biển (2\,976 ảnh dòng chữ) sinh với hạt giống khác. Hình~\ref{fig:synth} minh hoạ một số mẫu.
 
 \begin{figure}[H]
 \centering
@@ -36,10 +36,31 @@ Tập huấn luyện gồm 50\,000 biển (khoảng 75\,000 ảnh dòng chữ). 
 \label{fig:synth}
 \end{figure}
 
-\subsection{Định dạng nhãn chữ thật}
-Để fine-tune CRNN và đánh giá end-to-end, dự án định nghĩa hai tệp nhãn:
-\begin{itemize}[nosep]
-  \item \code{texts.csv} (\code{image, plate\_idx, text}): chữ của từng khung biển, dùng để cắt ảnh dòng chữ huấn luyện. Hai dòng của biển 2 dòng phân cách bằng dấu \code{/}.
-  \item \code{test\_texts.csv} (\code{image, text}): đáp án cho đánh giá end-to-end.
-\end{itemize}
-Tại thời điểm viết báo cáo, hai tệp này \textbf{chưa được gán nhãn}. Đây là hạn chế chính của kết quả thực nghiệm (Mục~\ref{sec:limit}).
+\subsection{Nhãn chữ thật: gán nhãn bán tự động}\label{sec:labeling}
+Để fine-tune CRNN và đánh giá end-to-end, cần chuỗi ký tự của từng biển thật, lưu trong hai tệp: \code{texts.csv} (\code{image, plate\_idx, text}, dùng để cắt ảnh dòng chữ huấn luyện) và \code{test\_texts.csv} (\code{image, text}, đáp án đánh giá). Hai dòng của biển 2 dòng phân cách bằng dấu \code{/}.
+
+Gõ tay hàng nghìn biển là không khả thi, nên dự án dùng quy trình bán tự động:
+\begin{enumerate}[nosep]
+  \item \code{scripts/draft\_texts.py}: PaddleOCR đọc \emph{nháp} mọi khung biển có trong nhãn YOLO, lưu ảnh cắt và bản nháp.
+  \item \code{scripts/review\_texts.py}: giao diện duyệt từng trang ảnh cắt; người duyệt sửa chuỗi sai, đánh dấu biển không đọc được, và được báo ngay chuỗi đã gõ có đúng định dạng biển Việt Nam không.
+  \item Xuất hai tệp nhãn. Có thể lấy thêm \emph{nhãn giả} (pseudo-label) cho tập train từ những bản nháp đúng định dạng và có độ tin cậy cao; tập val và test chỉ dùng nhãn đã duyệt.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Tình trạng gán nhãn chữ tại thời điểm viết báo cáo.}
+\label{tab:labels}
+\begin{tabular}{lrrrr}
+\toprule
+Tập & Bản nháp & Đánh dấu ``đã duyệt'' & Bỏ qua & Chưa duyệt \\
+\midrule
+Train & 2\,056 & 169 & 7 & 1\,880 \\
+Validation & 311 & 0 & 0 & 311 \\
+Test & 304 & 303 & 1 & 0 \\
+\midrule
+Tổng & 2\,671 & 472 & 8 & 2\,191 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Chỉ 1\,502 trên 2\,671 bản nháp (56\,\%) khớp một mẫu biển Việt Nam. Mục~\ref{sec:labels-quality} cho thấy các nhãn tập test tuy đã được đánh dấu ``đã duyệt'' nhưng thực chất vẫn là bản nháp của PaddleOCR, nên chưa dùng làm đáp án được.

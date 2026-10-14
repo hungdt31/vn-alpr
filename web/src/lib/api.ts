@@ -26,7 +26,7 @@ export interface GateEvent {
   confidence: number
   image_path: string | null
   created_at: string
-  duration_s?: number // only on an exit that follows an entry
+  duration_s: number | null // only set on an exit that follows an entry
 }
 
 export interface RecognizeResponse {

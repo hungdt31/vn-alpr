@@ -135,9 +135,5 @@ trong đó $c_i$ là độ tin cậy OCR của lần đọc thứ $i$. Gọi $s^
 \end{equation}
 Sau khi được xác nhận, track không cần chạy OCR nữa, nhờ đó tiết kiệm tính toán. Track mất dấu quá 30 khung hình bị loại. Nếu track đó chưa được xác nhận nhưng đã có đủ số lần đọc, kết quả tốt nhất của nó vẫn được phát ra.
 
-\subsection{Lớp ứng dụng}
-\begin{itemize}[nosep]
-  \item \textbf{CSDL vào/ra (SQLite).} Một lượt cùng biển và cùng hướng trong vòng 60\,giây bị bỏ qua, vì đó là cùng một xe được đọc hai lần. Khi xe ra mà trước đó có lượt vào, hệ thống tính thời gian gửi \code{duration\_s}.
-  \item \textbf{REST API (FastAPI)} gồm các điểm cuối \code{POST /recognize}, \code{POST /gate/\{in|out\}}, \code{GET /events} và \code{GET /parked}. Pipeline được khởi tạo trễ (lazy), nên kiểm thử có thể đưa vào pipeline giả.
-  \item \textbf{Giao diện Streamlit}: tải ảnh hoặc video lên, xem kết quả trực quan và tra cứu lịch sử.
-\end{itemize}
+\subsection{Nhật ký cổng}
+Mỗi lượt vào hoặc ra được ghi vào một nhật ký (SQLite). Một lượt cùng biển và cùng hướng trong vòng 60\,giây bị bỏ qua, vì đó là cùng một xe được camera đọc hai lần. Khi xe ra mà trước đó có lượt vào, hệ thống tính thời gian gửi. Nhật ký này được dùng chung bởi API, script xử lý video \code{run\_camera.py} và bãi giữ xe mô phỏng ở Mục~\ref{sec:app}.

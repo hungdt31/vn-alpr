@@ -3,17 +3,19 @@
 
 \paragraph{Hạn chế.}
 \begin{enumerate}[nosep]
-  \item Chưa có nhãn chữ thật, nên CRNN chưa được fine-tune trên biển thật và chưa có số liệu ablation end-to-end.
-  \item Dữ liệu tổng hợp dùng font Hershey, khác font biển số Việt Nam.
-  \item Chưa tối ưu cho ảnh ban đêm hay camera hồng ngoại.
-  \item Hướng vào/ra hiện cố định theo camera.
+  \item CRNN mới chỉ học trên dữ liệu tổng hợp và chưa đọc được biển trong bộ dữ liệu thật; chỉ tiêu độ chính xác biển ($\geq 90\,\%$) chưa đạt.
+  \item Nhãn chữ của tập test chưa được người duyệt, nên chưa có số liệu ablation end-to-end đáng tin cậy.
+  \item Phân loại 1 dòng / 2 dòng bằng ngưỡng tỉ lệ khung cố định thất bại khi ảnh bị co giãn.
+  \item Chưa tối ưu cho ảnh ban đêm hay camera hồng ngoại; hướng vào/ra cố định theo camera; giao diện web chưa có trang xử lý video.
 \end{enumerate}
 
 \paragraph{Hướng phát triển, theo thứ tự ưu tiên.}
 \begin{enumerate}[nosep]
-  \item \textbf{Gán nhãn chữ bán tự động.} PaddleOCR đọc trước trên các khung biển có sẵn trong nhãn YOLO, sau đó người kiểm tra và sửa. Từ đó tạo \code{texts.csv} và \code{test\_texts.csv}, rồi fine-tune CRNN (bước 4b) và chạy ablation.
-  \item Sinh dữ liệu tổng hợp bằng font gần giống font biển số Việt Nam, để giảm khoảng cách miền ngay từ giai đoạn huấn luyện trước.
-  \item Bổ sung các cặp nhầm đặc thù của font Việt Nam (ví dụ \code{H}$\to$\code{4}) vào hậu xử lý, dựa trên phân tích lỗi thực tế.
-  \item Xuất ONNX với kích thước đầu vào động để tăng tốc trên CPU. Thử TensorRT FP16 khi triển khai trên GPU.
-  \item Suy ra hướng vào/ra từ quỹ đạo theo dõi thay vì cố định theo camera.
+  \item \textbf{Phân loại số dòng dựa trên nội dung ảnh.} Thay ngưỡng tỉ lệ khung bằng việc tìm hai vùng chữ tách rời trong hồ sơ chiếu ngang (chính hồ sơ đang dùng để tách dòng), hoặc một bộ phân loại nhỏ. Sau đó chạy lại bước tạo nhãn nháp.
+  \item \textbf{Duyệt nhãn thật sự}, bắt đầu từ tập test, rồi tập val. Với tập train có thể kết hợp nhãn đã duyệt và nhãn giả có độ tin cậy cao.
+  \item \textbf{Fine-tune CRNN} trên ảnh dòng chữ thật, sau đó chạy ablation end-to-end (YOLO + PaddleOCR / CRNN, có và không có hậu xử lý) bằng \code{scripts/evaluate.py}.
+  \item \textbf{Giải mã CTC có ràng buộc theo mẫu biển.} Ở vị trí bắt buộc là chữ số chỉ chọn trong các chữ số, ở vị trí bắt buộc là chữ cái chỉ chọn trong các chữ cái hợp lệ, và chọn mẫu có xác suất cao nhất. Cách này dùng xác suất của chính mô hình thay cho bảng ký tự dễ nhầm viết tay; với tình huống \code{54-L1}, chữ số có xác suất cao nhất ở vị trí bị đọc sai chính là \code{4}.
+  \item Sinh dữ liệu tổng hợp bằng font gần với font biển số Việt Nam, kèm co giãn ảnh, để giảm khoảng cách miền ngay từ giai đoạn huấn luyện trước.
+  \item Trong lúc CRNN chưa đạt yêu cầu, ứng dụng có thể chuyển sang PaddleOCR bằng một dòng cấu hình (\code{ocr.engine: paddle}).
+  \item Xuất ONNX với kích thước đầu vào động; suy ra hướng vào/ra từ quỹ đạo theo dõi; thêm trang xử lý video vào giao diện web.
 \end{enumerate}

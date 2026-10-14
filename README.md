@@ -34,7 +34,7 @@ Camera ─▶ YOLO detector ─▶ Crop + deskew ─▶ 1 dòng / 2 dòng? ─�
 | OCR | CRNN (CNN + BiLSTM + CTC) tự train, hoặc PaddleOCR làm baseline | [ocr/](src/alpr/ocr/) |
 | Hậu xử lý | Chuẩn hoá, khớp template biển VN, sửa ký tự dễ nhầm theo vị trí (`O↔0`, `B↔8`, `S↔5`…) | [plate_format.py](src/alpr/postprocess/plate_format.py) |
 | Video | ByteTrack + bỏ phiếu có trọng số qua nhiều frame. Xe đã xác nhận thì bỏ qua OCR để tiết kiệm tính toán | [voter.py](src/alpr/tracking/voter.py), [pipeline.py](src/alpr/pipeline.py) |
-| Ứng dụng | REST API, giao diện Streamlit, log vào/ra SQLite (chống ghi trùng, tính thời gian gửi) | [app/](app/) |
+| Ứng dụng | REST API (FastAPI), giao diện web React có mô phỏng bãi xe 3D, log vào/ra SQLite (chống ghi trùng, tính thời gian gửi) | [app/](app/), [web/](web/) |
 
 ### Hậu xử lý theo định dạng biển VN
 
@@ -69,10 +69,10 @@ python scripts/run_camera.py --source data/demo.mp4 --save outputs/demo_out.mp4
 # REST API: http://localhost:8000/docs
 uvicorn app.api.main:app --port 8000
 
-# Giao diện web: http://localhost:8501
-streamlit run app/ui/streamlit_app.py
+# Giao diện web (React): http://localhost:5173, xem mục bên dưới
+cd web && npm install && npm run dev
 
-# Hoặc chạy cả hai bằng Docker
+# Hoặc chạy API bằng Docker
 docker compose up --build
 ```
 
@@ -148,7 +148,8 @@ ruff check src app scripts tests
 ```
 ├── configs/          # pipeline.yaml, crnn.yaml, data_plate.yaml
 ├── src/alpr/         # thư viện lõi: detection, ocr, postprocess, tracking, pipeline, export
-├── app/              # api (FastAPI), db (SQLite), ui (Streamlit)
+├── app/              # backend: api → services → domain, infra (SQLite, migration, ảnh)
+├── web/              # giao diện React + mô phỏng bãi xe 3D
 ├── scripts/          # chuẩn bị dữ liệu, train, đánh giá, benchmark, demo camera
 ├── notebooks/        # train trên Colab
 ├── tests/            # pytest

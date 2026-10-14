@@ -81,7 +81,7 @@ export function GateTab({ onLogged }: { onLogged: () => void }) {
                 <AlertTitle className="font-plate text-xl">{ev.display}</AlertTitle>
                 <AlertDescription>
                   Đã ghi lượt {ev.direction === "in" ? "vào" : "ra"} tại cổng {ev.gate}
-                  {ev.duration_s !== undefined && <> · thời gian gửi {formatDuration(ev.duration_s)}</>}
+                  {ev.duration_s != null && <> · thời gian gửi {formatDuration(ev.duration_s)}</>}
                 </AlertDescription>
               </Alert>
             ))}

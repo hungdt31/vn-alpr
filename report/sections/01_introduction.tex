@@ -35,6 +35,8 @@ Tốc độ end-to-end trên CPU & $\geq 8$ FPS & Laptop không có GPU \\
 \begin{enumerate}[nosep]
   \item Một pipeline hoàn chỉnh, hỗ trợ cả biển 1 dòng và 2 dòng, từ phát hiện, tách dòng, nhận dạng, hậu xử lý đến theo dõi qua video.
   \item Thuật toán hậu xử lý dựa trên mẫu định dạng biển số Việt Nam, sửa ký tự theo vị trí và chọn mẫu cần ít lần sửa nhất.
-  \item Bộ sinh biển số tổng hợp để huấn luyện trước CRNN khi chưa có dữ liệu chữ thật.
-  \item Ứng dụng demo gồm REST API, giao diện web và cơ sở dữ liệu vào/ra, kèm bộ kiểm thử tự động chạy được khi chưa có mô hình.
+  \item Bộ sinh biển số tổng hợp để huấn luyện trước CRNN, và quy trình gán nhãn chữ bán tự động (mô hình đọc nháp, người duyệt) cho biển thật.
+  \item Một bãi giữ xe mô phỏng 3D dùng mô hình thật: lấy thẻ, tính phí, so khớp biển ở cổng ra, xử lý mất thẻ và để bảo vệ duyệt các trường hợp bất thường; mỗi lần người gửi sửa biển số trở thành một nhãn huấn luyện.
+  \item Backend phân lớp (API, dịch vụ, miền, hạ tầng) với migration có phiên bản, kèm 84 bài kiểm thử tự động chạy được khi chưa có mô hình.
+  \item Một phân tích lỗi trung thực trên dữ liệu thật, chỉ ra vì sao độ chính xác trên dữ liệu tổng hợp không phản ánh độ chính xác thực tế.
 \end{enumerate}

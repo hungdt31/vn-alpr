@@ -5,9 +5,8 @@ from fastapi.testclient import TestClient
 
 from alpr.types import PlateResult
 from app.api.main import create_app
-from app.db.repository import EventRepository
-from app.parking.config import LotConfig, ParkingConfig
-from app.parking.lot import ParkingLot
+from app.container import build_container
+from tests.helpers import make_settings
 
 
 class FakePipeline:
@@ -26,14 +25,10 @@ def pipeline():
 
 
 @pytest.fixture
-def client(tmp_path, pipeline):
-    repo = EventRepository(tmp_path / "a.db")
-    cfg = ParkingConfig(lot=LotConfig(cards=3, slots={"motorbike": 2, "car": 1}), db=str(tmp_path / "a.db"),
-                        captures_dir=str(tmp_path / "captures"), allow_time_travel=True)
-    lot = ParkingLot(cfg, on_event=lambda *e: repo.add_event(*e, gate="sim"))
-    yield TestClient(create_app(pipeline=pipeline, repo=repo, lot=lot))
-    lot.close()
-    repo.close()
+def client(tmp_path, pipeline, clock):
+    container = build_container(make_settings(tmp_path, cards=3), pipeline=pipeline, clock=clock)
+    yield TestClient(create_app(container))
+    container.close()
 
 
 def snapshot():
@@ -45,18 +40,20 @@ def snapshot():
 def test_full_visit_with_fee(client, pipeline):
     lot = client.get("/parking/lot").json()
     assert lot["cards"]["next_code"] == "T001" and len(lot["slots"]) == 3
+    assert lot["fees"]["car"]["base"] == 30000 and lot["now"] == "2026-10-14T08:00:00"
 
     cap = client.post("/parking/captures", files=snapshot()).json()["capture"]
-    assert cap["plates"][0]["text"] == "54L19999"
+    assert cap["plates"][0]["text"] == "54L19999" and "path" not in cap
     assert client.get(f"/parking/captures/{cap['id']}/image").headers["content-type"] == "image/jpeg"
 
     assert client.post("/parking/plates/validate", json={"text": "54-L1 9999"}).json()["valid"]
     s = client.post("/parking/entry", json={"card_id": 1, "plate": "54-L1 9999", "vehicle_type": "motorbike",
                                            "capture_id": cap["id"], "style": {"color": "#ffdc58"}}).json()
     assert s["slot_id"] == "M01" and s["card_code"] == "T001" and not s["edited"]
+    assert client.get("/parking/lot").json()["slots"][0]["session"]["card_code"] == "T001"
     assert [e["plate"] for e in client.get("/parked").json()] == ["54L19999"]  # mirrored into the gate log
 
-    client.post("/parking/clock", json={"hours": 5})
+    assert client.post("/parking/clock", json={"hours": 5}).json()["now"] == "2026-10-14T13:00:00"
     pipeline.reads = [("54L19999", 0.99)]
     out_cap = client.post("/parking/captures", files=snapshot()).json()["capture"]
     check = client.post("/parking/exit/check", json={"card_id": 1, "capture_id": out_cap["id"]}).json()
@@ -66,6 +63,7 @@ def test_full_visit_with_fee(client, pipeline):
     assert done["status"] == "exited"
     assert client.get("/parking/stats").json()["revenue_total"] == 7000
     assert client.get("/parked").json() == []
+    assert [x["status"] for x in client.get("/parking/sessions").json()] == ["exited"]
 
 
 def test_mismatch_is_refused_without_guard_reason(client, pipeline):
@@ -81,13 +79,15 @@ def test_mismatch_is_refused_without_guard_reason(client, pipeline):
     assert r.status_code == 200
 
 
-def test_entry_errors_and_lost_card_lookup(client):
+def test_errors_map_to_http_status(client):
     assert client.post("/parking/entry", json={"card_id": 1, "plate": "xyz", "vehicle_type": "car"}).status_code == 422
     assert client.post("/parking/entry", json={"card_id": 1, "plate": "51G-123.45", "vehicle_type": "bus"}
                        ).status_code == 422
     client.post("/parking/entry", json={"card_id": 1, "plate": "51G-123.45", "vehicle_type": "car"})
     r = client.post("/parking/entry", json={"card_id": 2, "plate": "30A-123.45", "vehicle_type": "car"})
     assert r.status_code == 409 and "hết chỗ" in r.json()["detail"]
+    assert client.get("/parking/captures/999/image").status_code == 404
+    assert client.post("/parking/cards/2/restore").status_code == 404
 
     cap = client.post("/parking/captures", files=snapshot()).json()["capture"]
     check = client.post("/parking/exit/check", json={"plate": "51G12345", "capture_id": cap["id"], "lost_card": True})

@@ -2,7 +2,7 @@
 \section{Thiết lập thực nghiệm}
 
 \subsection{Môi trường}
-Mô hình được huấn luyện trên Google Colab với GPU NVIDIA T4 (15\,GB) bằng notebook \code{notebooks/train\_colab.ipynb}. Tốc độ suy luận được đo trên laptop với CPU Intel Core i5-10300H (4 nhân, 8 luồng) và 14\,GB RAM, không dùng GPU.
+Mô hình được huấn luyện trên Google Colab với GPU NVIDIA T4 (15\,GB) bằng notebook \code{notebooks/train\_colab.ipynb}. Bộ phát hiện được huấn luyện hai lần với cùng cấu hình: lần 1 ngày 07/10/2026 (mất 0,52 giờ) và lần 2 ngày 14/10/2026; mô hình đang dùng là của lần 2. Tốc độ suy luận được đo trên laptop với CPU Intel Core i5-10300H (4 nhân, 8 luồng) và 14\,GB RAM, không dùng GPU.
 
 \subsection{Siêu tham số}
 \begin{table}[H]
@@ -15,14 +15,14 @@ Mô hình được huấn luyện trên Google Colab với GPU NVIDIA T4 (15\,GB
 \midrule
 Khởi tạo & \code{yolo11n.pt} (tiền huấn luyện trên COCO) \\
 Kích thước ảnh, batch & 640, 32 \\
-Số epoch & tối đa 100, dừng sớm sau 20 epoch không cải thiện \\
+Số epoch & 20 (cả hai lần huấn luyện) \\
 Bộ tối ưu & AdamW, $\text{lr} = 0{,}002$, momentum 0,9 (Ultralytics tự chọn) \\
 Tăng cường & mosaic (tắt ở 10 epoch cuối), xoay $\pm10^\circ$, phối cảnh $5\cdot10^{-4}$, HSV-V 0,5, không lật ngang \\
 \midrule
 \multicolumn{2}{l}{\textbf{Bộ nhận dạng (CRNN)}} \\
 \midrule
-Dữ liệu & 50\,000 biển tổng hợp (khoảng 75\,000 dòng); kiểm định 2\,000 biển \\
-Batch, epoch & 128, 20 (checkpoint tốt nhất ở epoch 7) \\
+Dữ liệu & 50\,000 biển tổng hợp (75\,013 dòng); kiểm định 2\,000 biển (2\,976 dòng). Tệp nhãn thật hiện chỉ gồm biển của tập test (Mục~\ref{sec:labeling}), nên CRNN chưa được fine-tune trên dòng chữ thật \\
+Batch, epoch & 128, 20; khoảng 115\,giây/epoch trên T4. Checkpoint đang dùng là epoch 10 \\
 Bộ tối ưu & AdamW, $\text{lr}=10^{-3}$, weight decay $10^{-4}$, lịch OneCycle \\
 Khác & cắt gradient ở chuẩn 5, CTC blank = 0, tăng cường trực tuyến với cường độ 0,7 \\
 \bottomrule
@@ -39,4 +39,5 @@ Khác & cắt gradient ở chuẩn 5, CTC blank = 0, tăng cường trực tuy�
   \end{equation}
   trong đó $\operatorname{lev}$ là khoảng cách Levenshtein.
   \item \textbf{End-to-end:} các biển đáp án trong một ảnh được ghép tham lam với các dự đoán theo khoảng cách chỉnh sửa. Biển bị bỏ sót được tính là sai.
+  \item \textbf{Trên ảnh cắt:} để tách riêng chất lượng nhận dạng khỏi bộ phát hiện, bộ nhận dạng còn được đánh giá trên ảnh cắt theo khung gán nhãn (cùng lề 5\,\% như lúc suy luận).
 \end{itemize}

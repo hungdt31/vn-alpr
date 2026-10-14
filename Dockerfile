@@ -17,5 +17,5 @@ COPY app ./app
 COPY configs ./configs
 COPY scripts ./scripts
 
-EXPOSE 8000 8501
+EXPOSE 8000
 CMD ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

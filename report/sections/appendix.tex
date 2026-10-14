@@ -9,8 +9,13 @@ src/alpr/          (*thư viện lõi*)
   postprocess/     (*khớp mẫu biển số Việt Nam*)
   tracking/        (*bỏ phiếu theo track ID*)
   pipeline.py      (*ghép các khối*)
-app/               FastAPI, SQLite, Streamlit
-scripts/           (*dữ liệu, huấn luyện, đánh giá, xuất, benchmark*)
+app/
+  api/             (*router, schema; main.py lắp ráp ứng dụng*)
+  services/        (*bãi xe, nhật ký cổng, nhận diện, xuất dữ liệu*)
+  domain/          (*thực thể, tính phí, so khớp biển*)
+  infra/           (*SQLite + migration, repository, ảnh, đồng hồ*)
+web/               (*giao diện React, mô phỏng bãi xe 3D*)
+scripts/           (*dữ liệu, gán nhãn, huấn luyện, đánh giá, xuất, benchmark*)
 tests/             pytest (*-- dùng mô hình giả nên không cần trọng số*)
 \end{lstlisting}
 
@@ -19,7 +24,7 @@ tests/             pytest (*-- dùng mô hình giả nên không cần trọng s
 # (*huấn luyện:*) notebooks/train_colab.ipynb (*trên*) Colab (GPU T4)
 pip install -r requirements.txt && pip install -e .
 pytest -q                                        # (*kiểm thử*)
-streamlit run app/ui/streamlit_app.py            # (*giao diện web*)
+cd web && npm install && npm run dev             # (*giao diện web*)
 uvicorn app.api.main:app --port 8000             # REST API
 python scripts/evaluate.py --images data/processed/detection/images/test \
     --gt data/raw/test_texts.csv --tag "YOLO + CRNN + postprocess"

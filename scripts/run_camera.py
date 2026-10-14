@@ -13,7 +13,7 @@ import cv2
 
 from alpr.pipeline import ALPRPipeline
 from alpr.visualize import draw_results
-from app.db.repository import EventRepository
+from app.container import open_gate_log
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
     args = ap.parse_args()
 
     pipeline = ALPRPipeline.from_config(args.config)
-    repo = EventRepository(args.db)
+    gate_log = open_gate_log(args.db)
     cap = cv2.VideoCapture(int(args.source) if args.source.isdigit() else args.source)
     if not cap.isOpened():
         raise SystemExit(f"Cannot open source {args.source}")
@@ -38,10 +38,10 @@ def main():
 
     def log(events):
         for e in events:
-            ev = repo.add_event(e.text, e.display, args.direction, e.confidence, gate=args.gate)
+            ev = gate_log.record(e.text, e.display, args.direction, e.confidence, gate=args.gate)
             if ev:
-                extra = f"  parked {ev['duration_s'] // 60} min" if "duration_s" in ev else ""
-                print(f"[{ev['created_at']}] {args.direction.upper():3s} {e.display}  conf={e.confidence:.2f}{extra}")
+                extra = f"  parked {ev.duration_s // 60} min" if ev.duration_s is not None else ""
+                print(f"[{ev.created_at}] {args.direction.upper():3s} {e.display}  conf={e.confidence:.2f}{extra}")
 
     try:
         while True:

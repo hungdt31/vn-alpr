@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import cv2
 import numpy as np
@@ -7,35 +7,9 @@ from fastapi.testclient import TestClient
 
 from alpr.types import PlateResult
 from app.api.main import create_app
-from app.db.repository import EventRepository
-
-
-@pytest.fixture
-def repo(tmp_path):
-    r = EventRepository(tmp_path / "test.db", cooldown_s=60)
-    yield r
-    r.close()
-
-
-def test_repository_entry_exit_duration_and_parked(repo):
-    t0 = datetime(2026, 10, 6, 8, 0, 0)
-    assert repo.add_event("51G12345", "51G-123.45", "in", 0.9, ts=t0)
-    assert repo.add_event("59X112345", "59-X1 123.45", "in", 0.9, ts=t0)
-    assert {e["plate"] for e in repo.parked()} == {"51G12345", "59X112345"}
-
-    out = repo.add_event("51G12345", "51G-123.45", "out", 0.9, ts=t0 + timedelta(hours=2))
-    assert out["duration_s"] == 7200
-    assert [e["plate"] for e in repo.parked()] == ["59X112345"]
-    assert len(repo.list_events(plate="51G")) == 2
-
-
-def test_repository_cooldown_dedup(repo):
-    t0 = datetime(2026, 10, 6, 8, 0, 0)
-    assert repo.add_event("51G12345", "51G-123.45", "in", 0.9, ts=t0)
-    assert repo.add_event("51G12345", "51G-123.45", "in", 0.9, ts=t0 + timedelta(seconds=10)) is None
-    assert repo.add_event("51G12345", "51G-123.45", "in", 0.9, ts=t0 + timedelta(minutes=5))
-    with pytest.raises(ValueError):
-        repo.add_event("51G12345", "x", "sideways", 0.9)
+from app.container import build_container
+from app.core.errors import Invalid
+from tests.helpers import T0, make_settings
 
 
 class FakePipeline:
@@ -47,8 +21,36 @@ class FakePipeline:
 
 
 @pytest.fixture
-def client(repo):
-    return TestClient(create_app(pipeline=FakePipeline(), repo=repo))
+def container(tmp_path, clock):
+    c = build_container(make_settings(tmp_path), pipeline=FakePipeline(), clock=clock)
+    yield c
+    c.close()
+
+
+def test_gate_log_entry_exit_duration_and_parked(container):
+    log = container.gate_log
+    assert log.record("51G12345", "51G-123.45", "in", 0.9, ts=T0)
+    assert log.record("59X112345", "59-X1 123.45", "in", 0.9, ts=T0)
+    assert {e.plate for e in log.parked()} == {"51G12345", "59X112345"}
+
+    out = log.record("51G12345", "51G-123.45", "out", 0.9, ts=T0 + timedelta(hours=2))
+    assert out.duration_s == 7200
+    assert [e.plate for e in log.parked()] == ["59X112345"]
+    assert len(log.list(plate="51G")) == 2
+
+
+def test_gate_log_cooldown_dedup(container):
+    log = container.gate_log
+    assert log.record("51G12345", "51G-123.45", "in", 0.9, ts=T0)
+    assert log.record("51G12345", "51G-123.45", "in", 0.9, ts=T0 + timedelta(seconds=10)) is None
+    assert log.record("51G12345", "51G-123.45", "in", 0.9, ts=T0 + timedelta(minutes=5))
+    with pytest.raises(Invalid):
+        log.record("51G12345", "x", "sideways", 0.9)
+
+
+@pytest.fixture
+def client(container):
+    return TestClient(create_app(container))
 
 
 def jpeg():
@@ -61,12 +63,14 @@ def test_api_recognize(client):
     assert r.status_code == 200
     body = r.json()
     assert [p["display"] for p in body["plates"]] == ["51G-123.45", "5X"]
+    assert body["plates"][0]["box"] == [10, 10, 100, 40]
     assert "latency_ms" in body
 
 
 def test_api_rejects_non_image(client):
     r = client.post("/recognize", files={"file": ("x.txt", b"not an image", "text/plain")})
     assert r.status_code == 400
+    assert r.json() == {"detail": "Cannot decode image"}
 
 
 def test_api_gate_logs_only_valid_plates(client):
@@ -75,3 +79,10 @@ def test_api_gate_logs_only_valid_plates(client):
     assert [e["plate"] for e in client.get("/parked").json()] == ["51G12345"]
     assert len(client.get("/events", params={"plate": "51G-123.45"}).json()) == 1
     assert client.post("/gate/sideways", files=jpeg()).status_code == 422
+
+
+def test_importing_the_api_opens_nothing():
+    """The module-level app builds its container only when a server starts (lifespan)."""
+    from app.api import main
+
+    assert main.app.state.container is None
