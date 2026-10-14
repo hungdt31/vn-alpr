@@ -9,6 +9,8 @@ __pycache__/
 data/raw/
 data/processed/
 data/synthetic/
+data/drafts/
+drafts.zip
 data/*.db
 models/**/*.pt
 models/**/*.onnx

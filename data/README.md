@@ -51,6 +51,18 @@ Kiểm tra license từng nguồn trước khi dùng, rồi ghi lại vào bản
 - **Box:** dùng Label Studio, CVAT hoặc Roboflow, export định dạng YOLO, chỉ 1 lớp `plate`.
 - **Chữ:** gõ vào `texts.csv`. Nên tạo nhãn cho ảnh tự chụp trước, vì đó là phần quý nhất của dataset.
 
+### Gán nhãn chữ bán tự động
+
+Gõ tay chữ cho hàng nghìn biển rất lâu, nên có thể cho OCR đọc nháp trước rồi người sửa lại:
+
+1. `python scripts/draft_texts.py --ocr paddle --limit test=300 --limit val=300 --limit train=2000`: PaddleOCR đọc nháp các khung có sẵn trong nhãn YOLO, ghi ra `data/drafts/drafts.csv` và ảnh crop. Trên Colab, chạy ô 4b-1 của notebook.
+2. `streamlit run scripts/review_texts.py`: xem từng trang ảnh crop, sửa chữ sai, đánh dấu "Bỏ" với biển không đọc được, rồi bấm "Lưu trang". Tiến độ được lưu ngay vào `drafts.csv`, nên có thể dừng lúc nào cũng được.
+3. Bấm **Xuất** để có `texts.csv` và `test_texts.csv`:
+   - `texts.csv` gồm các biển đã duyệt. Có thể bật pseudo-label để lấy thêm nhãn nháp chưa duyệt của **tập train** khi OCR rất tự tin.
+   - `test_texts.csv` chỉ gồm ảnh test mà mọi biển trong ảnh đều đã được duyệt, để biển chưa có nhãn không bị tính là lỗi.
+
+Nên duyệt tập test **kỹ nhất**, vì mọi số liệu đánh giá dựa vào nó. Nếu chỉ giữ nguyên những gì PaddleOCR đọc mà không sửa, bảng so sánh sẽ thiên vị PaddleOCR.
+
 ## 5. Thống kê (điền sau khi EDA)
 
 | Tập | Ảnh | Biển | 1 dòng | 2 dòng | Ban ngày | Ban đêm |
